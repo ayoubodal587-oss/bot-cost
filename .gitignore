@@ -1,1 +1,51 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+*.egg
+.env
+venv/
+env/
+ENV/
+.venv/
+.Python
+
+# Virtual environments
+*.sqlite3
+*.db
+
+# =========================
+# Lambda & Deployment
+# =========================
+lambda_deploy.zip
+*.zip
+*.tar.gz
+*.log
+*.bak
+
+# =========================
+# Terraform
+# =========================
 .terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+terraform.tfvars
+*.tfvars.json
+*.backup
+*.tfplan
+
+# Ignore Terraform provider binaries
+terraform-provider-*
+*.tf.lock.hcl
+
+# =========================
+#
