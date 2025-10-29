@@ -16,7 +16,27 @@ ENV/
 .venv/
 .Python
 
-# Virtual environments
+# =========================
+# Python Build & Cache
+# =========================
+build/
+dist/
+*.manifest
+*.spec
+pip-wheel-metadata/
+__pypackages__/
+
+# =========================
+# IDE & System Files
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================
+# Virtual environments & databases
+# =========================
 *.sqlite3
 *.db
 
@@ -28,6 +48,10 @@ lambda_deploy.zip
 *.tar.gz
 *.log
 *.bak
+*.tmp
+*.swp
+node_modules/
+package-lock.json
 
 # =========================
 # Terraform
@@ -45,7 +69,12 @@ terraform.tfvars
 
 # Ignore Terraform provider binaries
 terraform-provider-*
-*.tf.lock.hcl
+.terraform.lock.hcl
 
 # =========================
-#
+# OS Temp Files
+# =========================
+*.tmp
+*.temp
+*.bak
+*.old
