@@ -10,14 +10,14 @@ __pycache__/
 .eggs/
 *.egg
 .env
-venv/
-env/
-ENV/
-.venv/
+venv*/
+env*/
+ENV*/
+.venv*/
 .Python
 
 # =========================
-# Python Build & Cache
+# Python build artifacts
 # =========================
 build/
 dist/
@@ -27,7 +27,7 @@ pip-wheel-metadata/
 __pypackages__/
 
 # =========================
-# IDE & System Files
+# Editors & OS junk
 # =========================
 .vscode/
 .idea/
@@ -35,13 +35,13 @@ __pypackages__/
 Thumbs.db
 
 # =========================
-# Virtual environments & databases
+# Databases
 # =========================
 *.sqlite3
 *.db
 
 # =========================
-# Lambda & Deployment
+# Lambda & Node
 # =========================
 lambda_deploy.zip
 *.zip
@@ -49,7 +49,6 @@ lambda_deploy.zip
 *.log
 *.bak
 *.tmp
-*.swp
 node_modules/
 package-lock.json
 
@@ -66,13 +65,11 @@ terraform.tfvars
 *.tfvars.json
 *.backup
 *.tfplan
-
-# Ignore Terraform provider binaries
 terraform-provider-*
 .terraform.lock.hcl
 
 # =========================
-# OS Temp Files
+# OS temp files
 # =========================
 *.tmp
 *.temp
