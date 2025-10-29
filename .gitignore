@@ -68,6 +68,11 @@ terraform.tfvars
 terraform-provider-*
 .terraform.lock.hcl
 
+# Ignore any provider binaries or compiled Terraform artifacts
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform-provider-*
+
 # =========================
 # OS temp files
 # =========================
@@ -75,3 +80,13 @@ terraform-provider-*
 *.temp
 *.bak
 *.old
+
+# =========================
+# AWS & Secrets
+# =========================
+.aws/
+credentials/
+*.pem
+*.key
+*.crt
+.env.local
