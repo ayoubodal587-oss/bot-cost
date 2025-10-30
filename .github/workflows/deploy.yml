@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Configure AWS_ACCESS_KEY_ID  # must match your environment name exactly
+    environment: Configure AWS_ACCESS_KEY_ID  # must match your environment name
 
     steps:
       - name: Checkout repository
@@ -46,7 +46,6 @@ jobs:
           else
             STATUS="❌ Deployment failed"
           fi
-
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
             "$SLACK_WEBHOOK_URL"
