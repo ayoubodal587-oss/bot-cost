@@ -8,11 +8,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Configure AWS_ACCESS_KEY_ID  # 👈 EXACT environment name from GitHub
+    environment: Configure AWS_ACCESS_KEY_ID  # must match your environment name exactly
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,12 +24,12 @@ jobs:
         run: |
           pip install -r requirements.txt -t .
           zip -r ../../lambda_deploy.zip .
-          
+
       - name: Deploy Lambda function
         env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ vars.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws lambda update-function-code \
             --function-name cost_report_function \
@@ -38,6 +38,8 @@ jobs:
 
       - name: Notify Slack
         if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             STATUS="✅ Deployment succeeded"
@@ -47,4 +49,4 @@ jobs:
 
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
-            ${{ vars.SLACK_WEBHOOK_URL }}
+            "$SLACK_WEBHOOK_URL"
