@@ -24,8 +24,12 @@ jobs:
           pip install -r requirements.txt -t .
           zip -r ../../lambda_deploy.zip .
 
+      - name: Debug AWS Region
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: echo "AWS region is '$AWS_REGION'"
+
       - name: Deploy Lambda function
-        id: deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -33,17 +37,12 @@ jobs:
         run: |
           aws lambda update-function-code \
             --function-name cost_report_function \
-            --zip-file fileb://lambda/lambda_deploy.zip \
-            --region $AWS_REGION
+            --zip-file fileb://lambda_deploy.zip \
+            --region "$AWS_REGION"
 
       - name: Cleanup temporary files
-        if: always()
-        run: |
-          rm -f lambda/lambda_deploy.zip
-          find lambda/cost_report -name '*.pyc' -delete
-          find lambda/cost_report -name '__pycache__' -type d -exec rm -rf {} +
+        run: rm -f lambda_deploy.zip || true
 
-      # Slack notification (success or failure)
       - name: Notify Slack
         if: always()
         env:
@@ -51,11 +50,15 @@ jobs:
           JOB_STATUS: ${{ job.status }}
         run: |
           if [ "$JOB_STATUS" == "success" ]; then
-            STATUS_MESSAGE="✅ Lambda deployment succeeded on branch *main*"
+            STATUS_MSG="✅ AWS Lambda deployment succeeded for *${{ github.repository }}*"
           else
-            STATUS_MESSAGE="❌ Lambda deployment failed on branch *main*"
+            STATUS_MSG="❌ AWS Lambda deployment failed for *${{ github.repository }}*"
           fi
 
-          curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\": \"${STATUS_MESSAGE}\"}" \
-          "$SLACK_WEBHOOK_URL"
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\": \"$STATUS_MSG\"}" \
+              "$SLACK_WEBHOOK_URL"
+          else
+            echo "No Slack webhook URL found — skipping notification."
+          fi
