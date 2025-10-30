@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: Configure AWS_ACCESS_KEY_ID  # 👈 EXACT environment name from GitHub
 
     steps:
       - name: Checkout repository
@@ -22,43 +23,28 @@ jobs:
         working-directory: lambda/cost_report
         run: |
           pip install -r requirements.txt -t .
-          zip -r ../../lambda_deploy.zip .
-
-      - name: Debug AWS Region
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: echo "AWS region is '$AWS_REGION'"
+          zip -r lambda_deploy.zip .
 
       - name: Deploy Lambda function
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ vars.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
           aws lambda update-function-code \
             --function-name cost_report_function \
             --zip-file fileb://lambda_deploy.zip \
             --region "$AWS_REGION"
 
-      - name: Cleanup temporary files
-        run: rm -f lambda_deploy.zip || true
-
       - name: Notify Slack
         if: always()
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          JOB_STATUS: ${{ job.status }}
         run: |
-          if [ "$JOB_STATUS" == "success" ]; then
-            STATUS_MSG="✅ AWS Lambda deployment succeeded for *${{ github.repository }}*"
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS="✅ Deployment succeeded"
           else
-            STATUS_MSG="❌ AWS Lambda deployment failed for *${{ github.repository }}*"
+            STATUS="❌ Deployment failed"
           fi
 
-          if [ -n "$SLACK_WEBHOOK_URL" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data "{\"text\": \"$STATUS_MSG\"}" \
-              "$SLACK_WEBHOOK_URL"
-          else
-            echo "No Slack webhook URL found — skipping notification."
-          fi
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
+            ${{ vars.SLACK_WEBHOOK_URL }}
