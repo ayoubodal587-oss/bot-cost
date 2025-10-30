@@ -8,11 +8,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: AWS_ACCESS_KEY_ID  # must match your environment name
+    environment: AWS_ACCESS_KEY_ID  # your environment name
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,12 +25,23 @@ jobs:
           pip install -r requirements.txt -t .
           zip -r ../../lambda_deploy.zip .
 
+      - name: Debug AWS environment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          echo "Testing AWS connection in region $AWS_REGION"
+          aws sts get-caller-identity
+          aws lambda list-functions --region "$AWS_REGION"
+
       - name: Deploy Lambda function
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
+          echo "Deploying to region: $AWS_REGION"
           aws lambda update-function-code \
             --function-name cost_report_function \
             --zip-file fileb://lambda_deploy.zip \
@@ -47,5 +58,5 @@ jobs:
             STATUS="❌ Deployment failed"
           fi
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
+            --data "{\"text\":\"$STATUS for *cost_report_function* in region $AWS_REGION\"}" \
             "$SLACK_WEBHOOK_URL"
