@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Configure AWS_ACCESS_KEY_ID  # must match your environment name
+    environment: AWS_ACCESS_KEY_ID  # must match your environment name
 
     steps:
       - name: Checkout repository
