@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Configure AWS_ACCESS_KEY_ID  # 👈 EXACT environment name from GitHub
+    environment: Configure AWS_ACCESS_KEY_ID  # 👈 same env name
 
     steps:
       - name: Checkout repository
@@ -23,7 +23,7 @@ jobs:
         working-directory: lambda/cost_report
         run: |
           pip install -r requirements.txt -t .
-          zip -r lambda_deploy.zip .
+          zip -r ../../lambda_deploy.zip .
 
       - name: Deploy Lambda function
         env:
@@ -38,6 +38,8 @@ jobs:
 
       - name: Notify Slack
         if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             STATUS="✅ Deployment succeeded"
@@ -45,6 +47,10 @@ jobs:
             STATUS="❌ Deployment failed"
           fi
 
-          curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
-            ${{ vars.SLACK_WEBHOOK_URL }}
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"$STATUS for *cost_report_function*\"}" \
+              $SLACK_WEBHOOK_URL
+          else
+            echo "No Slack webhook URL configured, skipping notification."
+          fi
