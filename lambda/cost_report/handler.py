@@ -8,7 +8,6 @@ def lambda_handler(event, context):
     # Load mock data (for now)
     with open("mock_data.json", "r") as f:
         data = json.load(f)
-        data1 = data
 
     total_cost = data["total_cost"]
     details = data["details"]
@@ -21,14 +20,15 @@ def lambda_handler(event, context):
         message += f"• {start}: ${amount}\n"
 
     # ------------------------------
-    # ✅ Step 1: Store daily report to S3--
+    # ✅ Step 1: Store daily report to S3 (cross-region)
     # ------------------------------
-    s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "eu-north-1"))
-    bucket_name = os.environ.get("COST_REPORT_BUCKET", "aws-cost-reports-bucket")
-    
+    # Explicitly use the bucket’s region (us-east-1)
+    s3 = boto3.client("s3", region_name="us-east-1")
+    bucket_name = os.environ.get("COST_REPORT_BUCKET", "aws-cost--reports")
+
     today = datetime.date.today().strftime("%Y-%m-%d")
     object_key = f"reports/{today}.json"
-    
+
     try:
         s3.put_object(
             Bucket=bucket_name,
@@ -59,3 +59,4 @@ def lambda_handler(event, context):
             "total_cost": total_cost
         })
     }
+
