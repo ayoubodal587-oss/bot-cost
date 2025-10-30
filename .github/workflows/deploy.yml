@@ -18,12 +18,14 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install dependencies and package
+      - name: Install dependencies and package Lambda
+        working-directory: lambda/cost_report
         run: |
           pip install -r requirements.txt -t .
-          zip -r lambda_deploy.zip .
+          zip -r ../../lambda_deploy.zip .
 
       - name: Deploy Lambda function
+        id: deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -31,5 +33,29 @@ jobs:
         run: |
           aws lambda update-function-code \
             --function-name cost_report_function \
-            --zip-file fileb://lambda_deploy.zip \
+            --zip-file fileb://lambda/lambda_deploy.zip \
             --region $AWS_REGION
+
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          rm -f lambda/lambda_deploy.zip
+          find lambda/cost_report -name '*.pyc' -delete
+          find lambda/cost_report -name '__pycache__' -type d -exec rm -rf {} +
+
+      # Slack notification (success or failure)
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$JOB_STATUS" == "success" ]; then
+            STATUS_MESSAGE="✅ Lambda deployment succeeded on branch *main*"
+          else
+            STATUS_MESSAGE="❌ Lambda deployment failed on branch *main*"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\": \"${STATUS_MESSAGE}\"}" \
+          "$SLACK_WEBHOOK_URL"
