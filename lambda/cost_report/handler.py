@@ -5,36 +5,38 @@ import certifi
 import botocore
 import ssl
 
-
 def lambda_handler(event, context):
-    print("certifi.where() ->", certifi.where())
-    print("os.path.exists(certifi.where()) ->", os.path.exists(certifi.where()))
-    print("ssl.get_default_verify_paths() ->", ssl.get_default_verify_paths().__dict__)
-
     print("Lambda started")
 
     bucket_name = os.environ["COST_REPORT_BUCKET"]
     region = os.environ.get("AWS_REGION", "eu-north-1")
     print(f"Using bucket: {bucket_name} in region: {region}")
 
+    # Show SSL paths for debugging
+    verify_paths = ssl.get_default_verify_paths()
+    print("SSL default cafile:", verify_paths.cafile)
+    print("certifi.where():", certifi.where())
+    print("certifi exists:", os.path.exists(certifi.where()))
+
     session = boto3.session.Session()
     s3 = session.client(
         "s3",
         region_name=region,
-        verify=certifi.where(),  # use our own CA bundle
+        verify=certifi.where(),  # use certifi CA bundle
         config=botocore.config.Config(signature_version='s3v4')
     )
 
     data = {
         "ResultsByTime": [
             {
-                "TimePeriod": {"Start": "2025-10-29", "End": "2025-10-30"},
+                "TimePeriod": {"Start": "2025-10-30", "End": "2025-10-31"},
                 "Total": {"BlendedCost": {"Amount": "1.23", "Unit": "USD"}}
             }
         ]
     }
 
     key = "reports/cost-report-test.json"
+
     try:
         s3.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
         print(f"✅ Uploaded file to s3://{bucket_name}/{key}")
