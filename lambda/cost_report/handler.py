@@ -1,20 +1,20 @@
-import json
-import boto3
-import os
+import json, boto3, os, certifi, botocore.config
 
 def lambda_handler(event, context):
     print("Lambda started")
 
-    bucket_name = os.environ.get("COST_REPORT_BUCKET")
-    if not bucket_name:
-        print("❌ COST_REPORT_BUCKET not set.")
-        return {"status": "error", "message": "Missing COST_REPORT_BUCKET"}
-
+    bucket_name = os.environ["COST_REPORT_BUCKET"]
     region = os.environ.get("AWS_REGION", "eu-north-1")
     print(f"Using bucket: {bucket_name} in region: {region}")
 
-    # Create S3 client with explicit region
-    s3 = boto3.client("s3", region_name=region)
+    # Force boto3 to use certifi's CA bundle
+    session = boto3.session.Session()
+    s3 = session.client(
+        "s3",
+        region_name=region,
+        verify=certifi.where(),  # << important fix
+        config=botocore.config.Config(signature_version='s3v4')
+    )
 
     data = {
         "ResultsByTime": [
@@ -27,14 +27,9 @@ def lambda_handler(event, context):
 
     key = "reports/cost-report-test.json"
     try:
-        s3.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=json.dumps(data),
-            ContentType="application/json"
-        )
+        s3.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
         print(f"✅ Uploaded file to s3://{bucket_name}/{key}")
-        return {"status": "success"}
+        return {"status": "ok", "file": f"s3://{bucket_name}/{key}"}
     except Exception as e:
         print(f"❌ S3 upload failed: {e}")
         return {"status": "error", "message": str(e)}
