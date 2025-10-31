@@ -8,11 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: eu-north-1
+    environment: AWS_ACCESS_KEY_ID  # your environment name
 
     steps:
       - name: Checkout repository
@@ -30,12 +26,21 @@ jobs:
           zip -r ../../lambda_deploy.zip .
 
       - name: Debug AWS environment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: eu-north-1
+
         run: |
           echo "Testing AWS connection in region $AWS_REGION"
           aws sts get-caller-identity
           aws lambda list-functions --region "$AWS_REGION"
 
       - name: Deploy Lambda function
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: eu-north-1
         run: |
           echo "Deploying to region: $AWS_REGION"
           aws lambda update-function-code \
