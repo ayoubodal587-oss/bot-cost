@@ -1,6 +1,8 @@
 import json
 import boto3
 import os
+import ssl
+import urllib3
 
 def lambda_handler(event, context):
     print("Lambda started")
@@ -9,7 +11,11 @@ def lambda_handler(event, context):
     region = os.environ.get("AWS_REGION", "eu-north-1")
     print(f"Using bucket: {bucket_name} in region: {region}")
 
-    s3 = boto3.client("s3", region_name=region)
+    # Disable SSL warnings (for debugging)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    # Try with SSL verification disabled (temporary fix)
+    s3 = boto3.client("s3", region_name=region, verify=False)
 
     data = {
         "ResultsByTime": [
@@ -21,6 +27,7 @@ def lambda_handler(event, context):
     }
 
     key = "reports/cost-report-test.json"
+
     try:
         s3.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
         print(f"✅ Uploaded file to s3://{bucket_name}/{key}")
