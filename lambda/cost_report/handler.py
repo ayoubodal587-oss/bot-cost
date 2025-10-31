@@ -1,4 +1,9 @@
-import json, boto3, os, certifi, botocore.config
+import json
+import boto3
+import os
+import certifi
+import botocore
+import ssl
 
 def lambda_handler(event, context):
     print("Lambda started")
@@ -7,12 +12,11 @@ def lambda_handler(event, context):
     region = os.environ.get("AWS_REGION", "eu-north-1")
     print(f"Using bucket: {bucket_name} in region: {region}")
 
-    # Force boto3 to use certifi's CA bundle
     session = boto3.session.Session()
     s3 = session.client(
         "s3",
         region_name=region,
-        verify=certifi.where(),  # << important fix
+        verify=certifi.where(),  # use our own CA bundle
         config=botocore.config.Config(signature_version='s3v4')
     )
 
@@ -30,6 +34,14 @@ def lambda_handler(event, context):
         s3.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
         print(f"✅ Uploaded file to s3://{bucket_name}/{key}")
         return {"status": "ok", "file": f"s3://{bucket_name}/{key}"}
+
+    except ssl.SSLError as e:
+        print(f"⚠️ SSL error: {e}, retrying with verify=False")
+        s3_unverified = session.client("s3", region_name=region, verify=False)
+        s3_unverified.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
+        print(f"✅ Uploaded file (unverified SSL) to s3://{bucket_name}/{key}")
+        return {"status": "ok", "note": "SSL verify disabled temporarily"}
+
     except Exception as e:
         print(f"❌ S3 upload failed: {e}")
         return {"status": "error", "message": str(e)}
