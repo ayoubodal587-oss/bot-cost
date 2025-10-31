@@ -5,7 +5,12 @@ import certifi
 import botocore
 import ssl
 
+
 def lambda_handler(event, context):
+    print("certifi.where() ->", certifi.where())
+    print("os.path.exists(certifi.where()) ->", os.path.exists(certifi.where()))
+    print("ssl.get_default_verify_paths() ->", ssl.get_default_verify_paths().__dict__)
+
     print("Lambda started")
 
     bucket_name = os.environ["COST_REPORT_BUCKET"]
