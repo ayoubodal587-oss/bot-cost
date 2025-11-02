@@ -1,6 +1,7 @@
 boto3
 requests
 certifi
-google-generativeai
+google-generativeai==0.8.3
+grpcio==1.60.1
+protobuf==4.25.3
 statistics
-grpcio
