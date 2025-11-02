@@ -21,7 +21,7 @@ def lambda_handler(event, context):
             # Construct from current function ARN
             current_arn = context.invoked_function_arn
             # Replace function name in ARN
-            lambda_arn = current_arn.replace('dynamic-scheduler', 'cost-report')
+            lambda_arn = current_arn.replace('dynamic-scheduler', 'aws-cost-report-lambda')
 
     print(f"📅 Action: {action}, Interval: {interval_minutes}min, Rule: {rule_name}")
 
