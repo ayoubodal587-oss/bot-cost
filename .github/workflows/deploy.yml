@@ -48,6 +48,15 @@ jobs:
             --zip-file fileb://lambda_deploy.zip \
             --region "$AWS_REGION"
 
+      - name: Upload cost report to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: eu-north-1
+        run: |
+          echo "Uploading cost report to S3"
+          aws s3 cp dashboard/cost-report-test.json s3://aws-cost-reports-929371299805/reports/cost-report-test.json --region "$AWS_REGION"
+
       - name: Notify Slack
         if: always()
         env:
