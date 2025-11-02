@@ -3,3 +3,4 @@ requests
 certifi
 google-generativeai
 statistics
+grpcio
