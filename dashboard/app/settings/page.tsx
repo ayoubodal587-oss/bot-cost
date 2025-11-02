@@ -109,8 +109,9 @@ export default function SettingsPage() {
       if (response.ok) {
         setToast({ message: `${section} settings saved successfully!`, type: "success" })
 
-        // If this is a report schedule change, send confirmation to webhook
+        // If this is a report schedule change, update the EventBridge schedule
         if (section === "Report Schedule") {
+          await updateSchedule()
           sendScheduleConfirmation()
         }
       } else {
@@ -119,6 +120,28 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Save settings error:', error)
       setToast({ message: `Failed to save ${section} settings`, type: "error" })
+    }
+  }
+
+  const updateSchedule = async () => {
+    try {
+      const response = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          interval_minutes: intervalMinutes
+        }),
+      })
+      if (!response.ok) {
+        console.warn('Failed to update schedule')
+        const errorData = await response.json()
+        console.error('Schedule update error:', errorData)
+      } else {
+        console.log('Schedule updated successfully')
+      }
+    } catch (error) {
+      console.warn('Failed to update schedule:', error)
     }
   }
 
@@ -236,7 +259,7 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">Interval (minutes)</label>
                   <select
                     value={intervalMinutes}
-                    onChange={(e) => setIntervalMinutes(Number(e.target.value))}
+                    onChange={(e) => setIntervalMinutes(e.target.value as any)}
                     className="w-full bg-input border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value={1}>Every 1 minute</option>
@@ -271,7 +294,7 @@ export default function SettingsPage() {
                 label="Monthly Budget"
                 type="number"
                 value={monthlyBudget}
-                onChange={(v) => setMonthlyBudget(Number(v))}
+                onChange={(v) => setMonthlyBudget(v as any)}
                 placeholder="500"
               />
               <div>
@@ -284,7 +307,7 @@ export default function SettingsPage() {
                   min="0"
                   max="100"
                   value={alertThreshold}
-                  onChange={(e) => setAlertThreshold(Number(e.target.value))}
+                onChange={(e) => setAlertThreshold(e.target.value as any)}
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground mt-2">

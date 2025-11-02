@@ -1,12 +1,32 @@
-# TODO: Enhance Report Schedule with Minute Intervals and Webhook Confirmation
+# TODO: Fix Scheduled Slack Messages Issue
 
-## Steps to Complete
+## Problem
+When users set a schedule (e.g., 5 minutes) in the dashboard settings UI, they receive a test confirmation message on Slack immediately, but the actual recurring scheduled messages don't arrive after the specified interval.
 
-- [x] Update dashboard/app/settings/page.tsx to include minute interval options (every 5, 10, 15, 30 minutes) and save report schedule settings
-- [x] Modify dashboard/app/api/settings/route.ts to handle report schedule settings (frequency, interval_minutes, timezone)
-- [x] Update lambda/cost_report/handler.py to calculate cost for the last interval period and include in message
-- [x] Add webhook confirmation message when saving report schedule settings
-- [x] Update terraform/main.tf to include EventBridge rule for minute-level scheduling
-- [x] Update terraform/variables.tf to add scheduling variables
-- [x] Test saving settings and webhook confirmation message
-- [x] Test minute-interval reports and cost calculations
+## Root Cause
+The dashboard was only sending a test confirmation message but not actually setting up the EventBridge rule to trigger recurring cost reports.
+
+## Solution Implemented
+1. **Updated `/api/schedule` endpoint** to actually invoke the dynamic scheduler Lambda instead of just simulating the response
+2. **Modified settings page** to call the schedule API when saving report schedule settings
+3. **Added AWS Lambda SDK** to the dashboard for invoking the dynamic scheduler
+4. **Enhanced dynamic scheduler Lambda** to support a `get_status` action for retrieving current schedule information
+5. **Updated GET endpoint** in schedule API to fetch real schedule status from Lambda
+
+## Files Modified
+- `dashboard/app/api/schedule/route.ts` - Added Lambda invocation and status retrieval
+- `dashboard/app/settings/page.tsx` - Added schedule update call on settings save
+- `lambda/dynamic_scheduler/handler.py` - Added get_status action support
+- `dashboard/package.json` - Added @aws-sdk/client-lambda dependency
+
+## Next Steps
+1. Deploy the updated Lambda functions to AWS
+2. Test the schedule functionality by setting a 5-minute interval
+3. Verify that recurring messages arrive on schedule
+4. Monitor CloudWatch logs for any issues
+
+## Testing
+- Set schedule to 5 minutes in dashboard
+- Check that EventBridge rule is created/updated
+- Wait for scheduled messages to arrive
+- Verify message content and timing

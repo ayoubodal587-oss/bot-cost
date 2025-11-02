@@ -1,11 +1,44 @@
 import { promises as fs } from 'fs'
 import path from 'path'
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
 
 const SETTINGS_FILE = path.join(process.cwd(), 'dashboard', 'settings.json')
+
+// Initialize Lambda client
+const lambdaClient = new LambdaClient({
+  region: process.env.AWS_REGION || 'us-east-1'
+})
 
 interface ScheduleRequest {
   action: 'create' | 'update' | 'delete'
   interval_minutes: number
+}
+
+async function invokeDynamicScheduler(action: string, intervalMinutes: number) {
+  try {
+    const payload = {
+      action,
+      interval_minutes: intervalMinutes,
+      rule_name: 'cost-report-schedule-dynamic',
+      lambda_arn: process.env.COST_REPORT_LAMBDA_ARN
+    }
+
+    const command = new InvokeCommand({
+      FunctionName: 'dynamic-scheduler', // Lambda function name
+      Payload: JSON.stringify(payload)
+    })
+
+    const response = await lambdaClient.send(command)
+    const responsePayload = JSON.parse(new TextDecoder().decode(response.Payload))
+
+    return responsePayload
+  } catch (error) {
+    console.error('Error invoking dynamic scheduler:', error)
+    return {
+      status: 'error',
+      message: `Failed to ${action} schedule: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }
+  }
 }
 
 export async function POST(request: Request) {
@@ -31,18 +64,17 @@ export async function POST(request: Request) {
       // Settings file doesn't exist or is empty
     }
 
-    // Here you would call the dynamic scheduler Lambda
-    // For now, we'll simulate the response
+    // Call the dynamic scheduler Lambda
+    const lambdaResponse = await invokeDynamicScheduler(action, interval_minutes)
+
     const response = {
-      status: 'success',
-      message: `Schedule ${action}d for every ${interval_minutes} minutes`,
+      status: lambdaResponse.status,
+      message: lambdaResponse.message || `Schedule ${action}d for every ${interval_minutes} minutes`,
       action,
       interval_minutes,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      lambda_response: lambdaResponse
     }
-
-    // TODO: Actually invoke the Lambda function
-    // This would require AWS SDK and proper credentials
 
     return Response.json(response)
   } catch (error) {
@@ -53,18 +85,28 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    // TODO: Call Lambda to get current schedule status
-    // For now, return mock data
-    const currentSchedule = {
-      rule_exists: false,
-      interval_minutes: 5,
-      status: 'not_implemented_yet'
+    // Call the dynamic scheduler Lambda to get current schedule status
+    const payload = {
+      action: 'get_status'
     }
 
-    return Response.json(currentSchedule)
+    const command = new InvokeCommand({
+      FunctionName: 'dynamic-scheduler',
+      Payload: JSON.stringify(payload)
+    })
+
+    const response = await lambdaClient.send(command)
+    const responsePayload = JSON.parse(new TextDecoder().decode(response.Payload))
+
+    return Response.json(responsePayload)
 
   } catch (error) {
     console.error('Get schedule error:', error)
-    return Response.json({ error: 'Failed to get schedule' }, { status: 500 })
+    return Response.json({
+      rule_exists: false,
+      interval_minutes: 5,
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

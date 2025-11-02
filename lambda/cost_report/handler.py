@@ -34,6 +34,15 @@ def lambda_handler(event, context):
         print("✅ Cost data loaded successfully")
     except Exception as e:
         print(f"❌ Error reading S3: {e}")
+        # Try to list objects to debug
+        try:
+            objects = s3.list_objects_v2(Bucket=bucket_name, Prefix="reports/")
+            if 'Contents' in objects:
+                print(f"📋 Available objects in reports/: {[obj['Key'] for obj in objects['Contents']]}")
+            else:
+                print("📋 No objects found in reports/ prefix")
+        except Exception as list_e:
+            print(f"❌ Error listing S3 objects: {list_e}")
         send_error_to_slack(slack_webhook, f"Failed to read cost data: {str(e)}")
         return {"status": "error", "message": str(e)}
 

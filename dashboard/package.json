@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.922.0",
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/util-stream-node": "latest",
     "@google/generative-ai": "latest",

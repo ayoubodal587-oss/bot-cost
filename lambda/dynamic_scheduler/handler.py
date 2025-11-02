@@ -9,7 +9,7 @@ def lambda_handler(event, context):
     print("🚀 Dynamic Scheduler Lambda started")
 
     # Extract parameters from event
-    action = event.get('action', 'create')  # create, update, delete
+    action = event.get('action', 'create')  # create, update, delete, get_status
     interval_minutes = event.get('interval_minutes', 5)
     rule_name = event.get('rule_name', 'cost-report-schedule-dynamic')
     lambda_arn = event.get('lambda_arn')
@@ -94,6 +94,10 @@ def lambda_handler(event, context):
                 "rule_name": rule_name,
                 "schedule_expression": schedule_expression
             }
+
+        elif action == 'get_status':
+            # Get current schedule status
+            return get_current_schedule()
 
         else:
             return {"status": "error", "message": f"Unknown action: {action}"}
