@@ -4,6 +4,7 @@ import os
 import requests
 from datetime import datetime, timedelta
 from statistics import mean
+import google.generativeai as genai
 
 def lambda_handler(event, context):
     print("🚀 Enhanced Cost Manager Lambda started")
@@ -104,16 +105,31 @@ def lambda_handler(event, context):
     anomaly_alert = detect_anomalies(cost_data)
 
     # Generate AI summary with enhanced prompt
-    ai_summary = generate_ai_summary(cost_data, analysis, google_api_key, model_name)
+    try:
+        ai_summary = generate_ai_summary(cost_data, analysis, google_api_key, model_name)
+    except Exception as e:
+        print(f"❌ AI generation failed: {e}")
+        ai_summary = f"**💰 Cost Overview**\nTotal spending: ${analysis['total_cost']:.1f} | Last interval cost: ${analysis['interval_cost']:.4f}\n\n**📈 Key Insights**\n• Cost trend: {analysis['trend']}\n• Interval spending shows {analysis['trend']} pattern\n• Projected monthly cost: ${analysis['projected_monthly']:.1f}\n\n**🎯 Recommendations**\n1. Monitor interval costs closely for sudden changes\n2. Review and optimize resource usage patterns\n3. Consider Reserved Instances for consistent workloads\n4. Enable cost allocation tags for better visibility"
 
     # Send enhanced Slack message
-    send_enhanced_slack_message(
-        slack_webhook,
-        ai_summary,
-        analysis,
-        anomaly_alert,
-        monthly_budget
-    )
+    try:
+        send_enhanced_slack_message(
+            slack_webhook,
+            ai_summary,
+            analysis,
+            anomaly_alert,
+            monthly_budget
+        )
+        print("✅ Enhanced report sent to Slack")
+    except Exception as e:
+        print(f"❌ Failed to send to Slack: {e}")
+        # Fallback to simple message
+        try:
+            simple_msg = {"text": f"📊 *AWS Cost Report*\n\n{ai_summary}"}
+            requests.post(slack_webhook, json=simple_msg, timeout=10)
+            print("✅ Simple report sent to Slack as fallback")
+        except Exception as fallback_e:
+            print(f"❌ Fallback Slack message also failed: {fallback_e}")
     
     print("✅ Cost report completed successfully")
     return {
